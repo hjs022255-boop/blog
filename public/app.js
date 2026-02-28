@@ -1,7 +1,15 @@
 const openComposeBtn = document.getElementById("open-compose-btn");
+const openLoginBtn = document.getElementById("open-login-btn");
 const composeScreen = document.getElementById("compose-screen");
 const closeComposeBtn = document.getElementById("close-compose-btn");
 const composeTitleEl = document.getElementById("compose-title");
+const loginScreen = document.getElementById("login-screen");
+const closeLoginBtn = document.getElementById("close-login-btn");
+const loginForm = document.getElementById("login-form");
+const loginEmailInput = document.getElementById("login-email");
+const loginPasswordInput = document.getElementById("login-password");
+const loginMessageEl = document.getElementById("login-message");
+const loginSubmitBtn = document.getElementById("login-submit-btn");
 
 const postForm = document.getElementById("post-form");
 const titleInput = document.getElementById("title");
@@ -32,9 +40,17 @@ const state = {
   posts: [],
   selectedId: null,
   editingId: null,
-  formImageDataUrl: ""
+  formImageDataUrl: "",
+  auth: {
+    isLoggedIn: false,
+    email: ""
+  }
 };
 const MAX_IMAGE_FILE_BYTES = 10 * 1024 * 1024;
+const LOGIN_ENDPOINT = "/api/auth/login";
+const FIREBASE_WEB_API_KEY =
+  window.FIREBASE_WEB_API_KEY ||
+  "AIzaSyCaPRkCOvcNpTHqDOdlMhRAojyZoq9q1RU";
 
 if (window.marked && typeof window.marked.setOptions === "function") {
   window.marked.setOptions({
@@ -72,9 +88,170 @@ async function api(path, options = {}) {
   return data;
 }
 
+async function firebaseAuthRequest(endpoint, payload) {
+  if (!FIREBASE_WEB_API_KEY) {
+    return {
+      ok: false,
+      data: { error: { message: "MISSING_API_KEY" } }
+    };
+  }
+
+  const url = `https://identitytoolkit.googleapis.com/v1/accounts:${endpoint}?key=${encodeURIComponent(
+    FIREBASE_WEB_API_KEY
+  )}`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+    return { ok: response.ok, data };
+  } catch (error) {
+    return {
+      ok: false,
+      data: { error: { message: "NETWORK_ERROR" } }
+    };
+  }
+}
+
+async function loginWithFirebaseFallback(email, password) {
+  const basePayload = {
+    email,
+    password,
+    returnSecureToken: true
+  };
+
+  const signIn = await firebaseAuthRequest("signInWithPassword", basePayload);
+  if (signIn.ok) {
+    return {
+      success: true,
+      token: signIn.data.idToken || "",
+      user: {
+        email: signIn.data.email || email,
+        localId: signIn.data.localId || ""
+      }
+    };
+  }
+
+  const reason =
+    signIn.data &&
+    signIn.data.error &&
+    typeof signIn.data.error.message === "string"
+      ? signIn.data.error.message
+      : "";
+
+  if (reason !== "INVALID_LOGIN_CREDENTIALS" && reason !== "EMAIL_NOT_FOUND") {
+    if (reason === "OPERATION_NOT_ALLOWED") {
+      return {
+        success: false,
+        message: "Firebase에서 이메일/비밀번호 로그인을 먼저 켜줘."
+      };
+    }
+    if (reason === "MISSING_API_KEY") {
+      return {
+        success: false,
+        message: "Firebase API 키가 없어서 로그인할 수 없어."
+      };
+    }
+    return {
+      success: false,
+      message: "로그인 처리 중 문제가 생겼어."
+    };
+  }
+
+  const signUp = await firebaseAuthRequest("signUp", basePayload);
+  if (signUp.ok) {
+    return {
+      success: true,
+      token: signUp.data.idToken || "",
+      user: {
+        email: signUp.data.email || email,
+        localId: signUp.data.localId || ""
+      }
+    };
+  }
+
+  const signUpReason =
+    signUp.data &&
+    signUp.data.error &&
+    typeof signUp.data.error.message === "string"
+      ? signUp.data.error.message
+      : "";
+
+  if (signUpReason === "EMAIL_EXISTS") {
+    return {
+      success: false,
+      message: "이메일 또는 비밀번호를 확인해줘."
+    };
+  }
+
+  return {
+    success: false,
+    message: "회원 처리 중 문제가 생겼어."
+  };
+}
+
+async function loginWithServer(email, password) {
+  try {
+    const response = await fetch(LOGIN_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (response.ok) {
+      if (data && data.success === true) {
+        return data;
+      }
+      return {
+        success: false,
+        message: data.message || "로그인에 실패했어."
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: "로그인 서버 연결에 실패했어."
+    };
+  }
+
+  return {
+    success: false,
+    message: "로그인 서버 응답이 올바르지 않아."
+  };
+}
+
+async function loginWithFallback(email, password) {
+  const firebaseResult = await loginWithFirebaseFallback(email, password);
+  if (firebaseResult.success === true) {
+    return firebaseResult;
+  }
+
+  if (
+    firebaseResult.message !== "Firebase API 키가 없어서 로그인할 수 없어." &&
+    firebaseResult.message !== "Firebase에서 이메일/비밀번호 로그인을 먼저 켜줘." &&
+    firebaseResult.message !== "로그인 처리 중 문제가 생겼어."
+  ) {
+    return firebaseResult;
+  }
+
+  // Firebase 직접 로그인 설정이 없거나 실패하면 /api 경로로 한 번 더 시도.
+  return loginWithServer(email, password);
+}
+
 function setMessage(message, isError = false) {
   formMessageEl.textContent = message || "";
   formMessageEl.style.color = isError ? "#fca5a5" : "#a3a9b4";
+}
+
+function setLoginMessage(message, isError = false) {
+  loginMessageEl.textContent = message || "";
+  loginMessageEl.style.color = isError ? "#fca5a5" : "#a3a9b4";
 }
 
 function escapeHtml(text) {
@@ -142,6 +319,22 @@ function openCompose() {
 
 function closeCompose() {
   composeScreen.classList.add("hidden");
+}
+
+function openLogin() {
+  loginScreen.classList.remove("hidden");
+}
+
+function closeLogin() {
+  loginScreen.classList.add("hidden");
+}
+
+function renderAuthButton() {
+  if (state.auth.isLoggedIn) {
+    openLoginBtn.textContent = `로그인됨: ${state.auth.email}`;
+  } else {
+    openLoginBtn.textContent = "로그인";
+  }
 }
 
 function prepareCreateForm() {
@@ -458,16 +651,71 @@ async function handleCommentDelete(commentId) {
   }
 }
 
+async function handleLoginSubmit(event) {
+  event.preventDefault();
+
+  const email = loginEmailInput.value.trim();
+  const password = loginPasswordInput.value.trim();
+
+  if (!email || !password) {
+    setLoginMessage("이메일이랑 비밀번호를 입력해줘.", true);
+    return;
+  }
+
+  try {
+    loginSubmitBtn.disabled = true;
+    setLoginMessage("로그인 확인중...");
+
+    const result = await loginWithFallback(email, password);
+
+    if (!result || result.success !== true) {
+      throw new Error(result.message || "로그인에 실패했어.");
+    }
+
+    state.auth.isLoggedIn = true;
+    state.auth.email = (result.user && result.user.email) || email;
+    renderAuthButton();
+    setLoginMessage("로그인 완료.");
+
+    setTimeout(() => {
+      closeLogin();
+      loginForm.reset();
+      setLoginMessage("");
+    }, 400);
+  } catch (error) {
+    setLoginMessage(error.message || "이메일 또는 비밀번호를 확인해줘.", true);
+  } finally {
+    loginSubmitBtn.disabled = false;
+  }
+}
+
 openComposeBtn.addEventListener("click", () => {
   prepareCreateForm();
   openCompose();
+});
+
+openLoginBtn.addEventListener("click", () => {
+  if (state.auth.isLoggedIn) {
+    state.auth.isLoggedIn = false;
+    state.auth.email = "";
+    renderAuthButton();
+    return;
+  }
+
+  setLoginMessage("");
+  openLogin();
 });
 
 closeComposeBtn.addEventListener("click", () => {
   closeCompose();
 });
 
+closeLoginBtn.addEventListener("click", () => {
+  closeLogin();
+});
+
 postForm.addEventListener("submit", handleSubmit);
+loginForm.addEventListener("submit", handleLoginSubmit);
 cancelEditBtn.addEventListener("click", () => {
   prepareCreateForm();
 });
@@ -510,6 +758,7 @@ postListEl.addEventListener("click", (event) => {
 
 setCommentFormEnabled(false);
 prepareCreateForm();
+renderAuthButton();
 loadPosts().catch((error) => {
   window.alert(error.message);
 });

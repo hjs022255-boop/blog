@@ -16,7 +16,10 @@
           <h1>한준섭</h1>
           <p>한준섭의 Blog</p>
         </div>
-        <button id="open-compose-btn" class="btn btn-primary btn-top" type="button">글작성</button>
+        <div class="header-actions">
+          <button id="open-compose-btn" class="btn btn-primary btn-top" type="button">글작성</button>
+          <button id="open-login-btn" class="btn btn-ghost btn-top" type="button">로그인</button>
+        </div>
       </div>
     </header>
 
@@ -88,6 +91,35 @@
           </section>
         </div>
       </form>
+    </section>
+
+    <section id="login-screen" class="overlay-screen hidden">
+      <div class="overlay-card">
+        <div class="overlay-head">
+          <h2>로그인</h2>
+          <button id="close-login-btn" class="btn btn-ghost btn-small" type="button">닫기</button>
+        </div>
+
+        <form id="login-form" class="overlay-form">
+          <label class="field-label" for="login-email">이메일</label>
+          <input id="login-email" type="email" autocomplete="email" required placeholder="이메일 입력" />
+
+          <label class="field-label" for="login-password">비밀번호</label>
+          <input
+            id="login-password"
+            type="password"
+            autocomplete="current-password"
+            required
+            placeholder="비밀번호 입력"
+          />
+
+          <p id="login-message" class="message"></p>
+
+          <div class="form-actions">
+            <button id="login-submit-btn" class="btn btn-primary" type="submit">로그인</button>
+          </div>
+        </form>
+      </div>
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>

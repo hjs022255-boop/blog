@@ -70,6 +70,12 @@ body {
   gap: 12px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .header h1 {
   margin: 0;
   font-size: 1.85rem;
@@ -341,6 +347,43 @@ textarea {
   z-index: 30;
   padding: 16px;
   overflow: auto;
+}
+
+.overlay-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: rgba(7, 9, 12, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.overlay-card {
+  width: 100%;
+  max-width: 460px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--surface) 0%, #151920 100%);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.overlay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.overlay-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.overlay-form {
+  margin-top: 10px;
 }
 
 .compose-topbar {
