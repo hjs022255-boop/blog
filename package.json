@@ -1,0 +1,11 @@
+{
+  "name": "simple-local-blog",
+  "version": "1.0.0",
+  "description": "Simple blog with local file storage",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "license": "MIT"
+}

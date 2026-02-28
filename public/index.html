@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>한준섭 블로그</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-1"></div>
+    <div class="bg-shape bg-shape-2"></div>
+
+    <header class="header">
+      <div class="header-main">
+        <div>
+          <h1>한준섭</h1>
+          <p>한준섭의 개인 블로그</p>
+        </div>
+        <button id="open-compose-btn" class="btn btn-primary btn-top" type="button">글작성</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="card post-list-card">
+        <div class="card-head">
+          <h2>글 목록</h2>
+          <span id="post-count" class="count">0개</span>
+        </div>
+        <ul id="post-list" class="post-list"></ul>
+      </section>
+
+      <section class="card viewer">
+        <div class="card-head">
+          <h2>글 보기</h2>
+          <div class="viewer-actions hidden" id="viewer-actions">
+            <button id="like-btn" class="btn btn-primary" type="button">좋아요 <span id="like-count">0</span></button>
+            <button id="edit-btn" class="btn btn-ghost" type="button">수정</button>
+            <button id="delete-btn" class="btn btn-danger" type="button">삭제</button>
+          </div>
+        </div>
+
+        <article id="post-view" class="post-view empty">오른쪽 목록에서 글을 선택하면 내용이 보여.</article>
+
+        <section class="comment-section">
+          <h3>댓글</h3>
+          <form id="comment-form" class="comment-form">
+            <input id="comment-input" type="text" maxlength="500" placeholder="댓글을 입력해줘" />
+            <button class="btn btn-ghost" type="submit">댓글 달기</button>
+          </form>
+          <ul id="comment-list" class="comment-list"></ul>
+        </section>
+      </section>
+    </main>
+
+    <section id="compose-screen" class="compose-screen hidden">
+      <div class="compose-topbar">
+        <button id="close-compose-btn" class="btn btn-ghost" type="button">홈으로</button>
+        <h2 id="compose-title">새 글 작성</h2>
+      </div>
+
+      <form id="post-form" class="compose-form">
+        <div class="compose-grid">
+          <section class="editor-pane">
+            <label class="field-label" for="title">제목</label>
+            <input id="title" name="title" type="text" maxlength="120" required placeholder="제목을 입력해줘" />
+
+            <label class="field-label" for="content">내용 (마크다운)</label>
+            <textarea id="content" name="content" rows="14" required placeholder="# 제목\n\n- 목록\n- **굵게**\n- [링크](https://example.com)"></textarea>
+
+            <label class="field-label" for="image">사진 첨부</label>
+            <input id="image" name="image" type="file" accept="image/*" />
+            <div id="image-preview-wrap" class="image-preview-wrap hidden">
+              <img id="image-preview" class="image-preview" alt="첨부 미리보기" />
+              <button id="remove-image-btn" class="btn btn-ghost btn-small" type="button">사진 제거</button>
+            </div>
+
+            <p id="form-message" class="message"></p>
+
+            <div class="form-actions">
+              <button id="submit-btn" class="btn btn-primary" type="submit">작성하기</button>
+              <button id="cancel-edit-btn" class="btn btn-ghost hidden" type="button">수정 취소</button>
+            </div>
+          </section>
+
+          <section class="preview-pane">
+            <h3>마크다운 미리보기</h3>
+            <article id="markdown-preview" class="preview-content markdown-body"></article>
+          </section>
+        </div>
+      </form>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
